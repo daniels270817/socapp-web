@@ -11,10 +11,65 @@ from .serializers import UserSerializer
 
 class RegisterView(APIView):
     def post(self, request):
+        if 'username' not in request.data:
+            return Response({
+                'status': 'error',
+                'message': 'Username is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        username = request.data['username'].strip()
+        if not username:
+            return Response({
+                'status': 'error',
+                'message': 'Username is empty'
+            }, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        if 'email' not in request.data:
+            return Response({
+                'status': 'error',
+                'message': 'Email is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        email = request.data['email'].strip()
+        if not email:
+            return Response({
+                'status': 'error',
+                'message': 'Email is empty'
+            }, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        if 'password' not in request.data:
+            return Response({
+                'status': 'error',
+                'message': 'Password is required'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        password = str(request.data['password']).strip()
+        if not password:
+            return Response({
+                'status': 'error',
+                'message': 'Password is empty'
+            }, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        user = User.objects.filter(username=username).first()
+        if user:
+            return Response({
+                'status': 'error',
+                'message': 'User with this username already exists.'
+            }, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
+        user = User.objects.filter(email=email).first()
+        if user:
+            return Response({
+                'status': 'error',
+                'message': 'User with this email already exists.'
+            }, status=status.HTTP_422_UNPROCESSABLE_ENTITY)
+
         serializer = UserSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer.is_valid()
         serializer.save()
-        return Response(serializer.data)
+
+        return Response({
+            'status': 'success',
+            'message': 'User has been successfully created',
+            'data': serializer.data
+        })
 
 
 class LoginView(APIView):
@@ -49,7 +104,7 @@ class LoginView(APIView):
             'data': {
                 'token': token
             }
-        }, status=status.HTTP_200_OK)
+        })
         response.set_cookie(key='jwt', value=token, httponly=True)
 
         return response
@@ -60,7 +115,7 @@ class LogoutView(APIView):
         response = Response({
             'status': 'success',
             'message': 'You have successfully logged out'
-        }, status.HTTP_200_OK)
+        })
         response.delete_cookie('jwt')
         return response
 
