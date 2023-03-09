@@ -45,12 +45,23 @@ class LoginView(APIView):
 
         response = Response({
             'status': 'success',
+            'message': 'You have successfully logged in',
             'data': {
                 'token': token
             }
         }, status=status.HTTP_200_OK)
         response.set_cookie(key='jwt', value=token, httponly=True)
 
+        return response
+
+
+class LogoutView(APIView):
+    def post(self, request):
+        response = Response({
+            'status': 'success',
+            'message': 'You have successfully logged out'
+        }, status.HTTP_200_OK)
+        response.delete_cookie('jwt')
         return response
 
 
