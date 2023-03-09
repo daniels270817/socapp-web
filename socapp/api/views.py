@@ -1,4 +1,5 @@
 import datetime
+
 import jwt
 from rest_framework import status
 from rest_framework.response import Response
@@ -44,7 +45,6 @@ class LoginView(APIView):
 
         response = Response({
             'status': 'success',
-            'message': 'You have successfully logged in',
             'data': {
                 'token': token
             }
@@ -52,3 +52,30 @@ class LoginView(APIView):
         response.set_cookie(key='jwt', value=token, httponly=True)
 
         return response
+
+
+class UserView(APIView):
+    def get(self, request):
+        token = request.COOKIES.get('jwt')
+
+        if not token:
+            return Response({
+                'status': 'error',
+                'message': 'You are not logged in'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            payload = jwt.decode(token, 'socapp', algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            return Response({
+                'status': 'error',
+                'message': 'Token has expired, login again'
+            }, status=status.HTTP_403_FORBIDDEN)
+
+        user = User.objects.get(id=payload['id'])
+        serializer = UserSerializer(user)
+
+        return Response({
+            'status': 'success',
+            'data': serializer.data
+        })
